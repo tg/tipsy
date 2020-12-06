@@ -15,31 +15,49 @@ func Decode(dst, src []byte) ([]byte, error) {
 		return nil, nil
 	}
 
-	prefix, sn := binary.Uvarint(src)
-	if sn <= 0 {
+	// read prefix
+	dstSize, prefixSize := decodePrefix(src)
+	if prefixSize <= 0 {
 		return nil, ErrCorrupt
 	}
-	src = src[sn:]
+	if dstSize == 0 {
+		return nil, nil
+	}
+	src = src[prefixSize:]
 
-	// decode destination size
+	// prepare dst so it has expected size and is zeroed
+	if len(dst) >= dstSize {
+		dst = dst[:dstSize]
+		for n := range dst {
+			dst[n] = 0
+		}
+	} else {
+		dst = make([]byte, dstSize)
+	}
+
+	// decode
+	err := decodeBlocks(dst, src)
+	return dst, err
+}
+
+func decodePrefix(src []byte) (int, int) {
+	prefix, sn := binary.Uvarint(src)
+	if sn <= 0 {
+		return 0, sn
+	}
+
+	// TODO: check overflows
+
+	// decode encoded size
 	size := prefix >> 1
 	if prefix&1 == 1 {
 		size = 1 << size
 	}
 
-	if size == 0 {
-		return nil, nil
-	}
+	return int(size), sn
+}
 
-	if len(dst) >= int(size) {
-		dst = dst[:size]
-		for n := range dst {
-			dst[n] = 0
-		}
-	} else {
-		dst = make([]byte, size)
-	}
-
+func decodeBlocks(dst, src []byte) error {
 	// dst write index
 	dn := 0
 
@@ -47,7 +65,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 		switch bits.LeadingZeros8(src[0]) {
 		case 0:
 			if dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 
 			v := src[0]
@@ -66,7 +84,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 1:
 			if len(src) < 2 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 8) | uint64(src[1])
 
@@ -85,7 +103,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 2:
 			if len(src) < 3 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 16) | (uint64(src[1]) << 8) | uint64(src[2])
 
@@ -104,7 +122,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 3:
 			if len(src) < 4 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 24) | (uint64(src[1]) << 16) | (uint64(src[2]) << 8) | uint64(src[3])
 
@@ -123,7 +141,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 4:
 			if len(src) < 5 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 32) | (uint64(src[1]) << 24) | (uint64(src[2]) << 16) |
 				(uint64(src[3]) << 8) | uint64(src[4])
@@ -143,7 +161,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 5:
 			if len(src) < 6 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 40) | (uint64(src[1]) << 32) | (uint64(src[2]) << 24) |
 				(uint64(src[3]) << 16) | (uint64(src[4]) << 8) | uint64(src[5])
@@ -163,7 +181,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 			dn += 7
 		case 6:
 			if len(src) < 7 || dn+7 > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 			v := (uint64(src[0]) << 48) | (uint64(src[1]) << 40) | (uint64(src[2]) << 32) |
 				(uint64(src[3]) << 24) | (uint64(src[4]) << 16) | (uint64(src[5]) << 8) | uint64(src[6])
@@ -195,17 +213,17 @@ func Decode(dst, src []byte) ([]byte, error) {
 
 			v, n := binary.Uvarint(src[1:])
 			if n <= 0 {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 
 			dn += 7 + int(v)*7
 			if dn > len(dst) {
-				return nil, ErrCorrupt
+				return ErrCorrupt
 			}
 
 			src = src[1+n:]
 		}
 	}
 
-	return dst, nil
+	return nil
 }

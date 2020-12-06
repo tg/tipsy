@@ -18,6 +18,10 @@ func Encode(dst, src []byte) []byte {
 	// write prefix
 	dst = appendPrefix(dst, len(src))
 
+	return encodeBlocks(dst, src)
+}
+
+func encodeBlocks(dst, src []byte) []byte {
 	// empty is a counter of empty blocks
 	var empty uint64
 
