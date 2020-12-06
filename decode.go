@@ -26,7 +26,7 @@ func Decode(dst, src []byte) ([]byte, error) {
 	src = src[prefixSize:]
 
 	// prepare dst so it has expected size and is zeroed
-	if len(dst) >= dstSize {
+	if cap(dst) >= dstSize {
 		dst = dst[:dstSize]
 		for n := range dst {
 			dst[n] = 0
