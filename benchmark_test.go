@@ -83,7 +83,7 @@ func runBenchmarks(name string,
 
 	for _, maxn := range []int{1, 2, 3, 4, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 10e3, 100e3} {
 		// var prec uint8 = 9
-		hll, err := hyperloglog.New(12)
+		hll, err := hyperloglog.New(14)
 		if err != nil {
 			panic(err)
 		}

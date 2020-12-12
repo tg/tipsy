@@ -25,19 +25,21 @@ func Decode(dst, src []byte) ([]byte, error) {
 	}
 	src = src[prefixSize:]
 
+	decSize := 7 * (dstSize/7 + 1)
+
 	// prepare dst so it has expected size and is zeroed
-	if cap(dst) >= dstSize {
-		dst = dst[:dstSize]
+	if cap(dst) >= decSize {
+		dst = dst[:decSize]
 		for n := range dst {
 			dst[n] = 0
 		}
 	} else {
-		dst = make([]byte, dstSize)
+		dst = make([]byte, decSize)
 	}
 
 	// decode
 	err := decodeBlocks(dst, src)
-	return dst, err
+	return dst[:dstSize], err
 }
 
 func decodePrefix(src []byte) (int, int) {

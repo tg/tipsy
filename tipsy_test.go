@@ -116,7 +116,7 @@ func TestDecoder_reuseBuffer(t *testing.T) {
 }
 
 func TestDecoder_srcTooLarge(t *testing.T) {
-	src := []byte{1, 2, 3, 4, 5, 6, 7}
+	src := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 	encoded := Encode(nil, src)
 
 	encoded = append(encoded, 1<<7)
