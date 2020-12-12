@@ -3,6 +3,7 @@ package tipsy
 import (
 	"encoding/binary"
 	"math/bits"
+	"reflect"
 	"unsafe"
 )
 
@@ -22,24 +23,36 @@ func Encode(dst, src []byte) []byte {
 	return encodeBlocks(dst, src)
 }
 
+func fastLeadingZeroBlocks(src []byte) uint64 {
+	var slice64 []int64
+	srcHeader := (*reflect.SliceHeader)(unsafe.Pointer(&src))
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&slice64))
+	sliceHdr.Data = srcHeader.Data
+	sliceHdr.Len = len(src) / 8
+	sliceHdr.Cap = len(src) / 8
+
+	n := 0
+	for ; n < len(slice64); n++ {
+		if slice64[n] != 0 {
+			break
+		}
+	}
+	return (uint64(n) * 8) / 7
+}
+
 func encodeBlocks(dst, src []byte) []byte {
 	// empty is a counter of empty blocks
 	var empty uint64
 
-	for ; ; src = src[7:] {
-		if len(src) >= 8 {
-			if (*(*uint64)(unsafe.Pointer(&src[0]))) == 0 {
-				empty++
-				continue
-			}
-		} else if len(src) < 7 {
+	for {
+		if len(src) < 7 {
 			if len(src) == 0 {
 				break
 			}
 
-			s2 := make([]byte, 7)
-			copy(s2, src)
-			src = s2
+			finalBlock := make([]byte, 7)
+			copy(finalBlock, src)
+			src = finalBlock
 		}
 
 		// rebind source block
@@ -51,7 +64,9 @@ func encodeBlocks(dst, src []byte) []byte {
 
 		// increase empty blocks counter and skip to the next block
 		if sum == 0 {
-			empty++
+			zb := 1 + fastLeadingZeroBlocks(src[7:])
+			empty += zb
+			src = src[7*zb:]
 			continue
 		}
 
@@ -128,24 +143,9 @@ func encodeBlocks(dst, src []byte) []byte {
 			dst = append(dst, 1)
 			dst = append(dst, sb...)
 		}
-	}
 
-	// write residual if non-empty
-	// if len(src) > 0 {
-	// 	for _, b := range src {
-	// 		if b != 0 {
-	// 			// flush empty blocks if any
-	// 			if empty > 0 {
-	// 				dst = encodeEmptyBlocks(dst, empty)
-	// 			}
-	// 			// write remaining bytes as fixed block
-	// 			// TODO: could be optimized to use regular encoding
-	// 			dst = append(dst, 1)
-	// 			dst = append(dst, src...)
-	// 			break
-	// 		}
-	// 	}
-	// }
+		src = src[7:]
+	}
 
 	return dst
 }
