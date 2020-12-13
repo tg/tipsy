@@ -24,12 +24,14 @@ func Encode(dst, src []byte) []byte {
 }
 
 func fastLeadingZeroBlocks(src []byte) uint64 {
-	var slice64 []int64
 	srcHeader := (*reflect.SliceHeader)(unsafe.Pointer(&src))
-	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&slice64))
-	sliceHdr.Data = srcHeader.Data
-	sliceHdr.Len = len(src) / 8
-	sliceHdr.Cap = len(src) / 8
+	sliceHeader := &reflect.SliceHeader{
+		Data: srcHeader.Data,
+		Len:  len(src) / 8,
+		Cap:  len(src) / 8,
+	}
+
+	slice64 := *(*[]int64)(unsafe.Pointer(sliceHeader))
 
 	n := 0
 	for ; n < len(slice64); n++ {
