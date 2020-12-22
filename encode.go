@@ -45,6 +45,7 @@ func fastLeadingZeroBlocks(src []byte) uint64 {
 func encodeBlocks(dst, src []byte) []byte {
 	// empty is a counter of empty blocks
 	var empty uint64
+	finalBlock := make([]byte, 7)
 
 	for {
 		if len(src) < 7 {
@@ -52,7 +53,6 @@ func encodeBlocks(dst, src []byte) []byte {
 				break
 			}
 
-			finalBlock := make([]byte, 7)
 			copy(finalBlock, src)
 			src = finalBlock
 		}
