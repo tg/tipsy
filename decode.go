@@ -40,6 +40,12 @@ func Decode(dst, src []byte) ([]byte, error) {
 	return dst, err
 }
 
+// DecodedLen returns lenght of decoded block of data.
+func DecodedLen(src []byte) int {
+	size, _ := decodePrefix(src)
+	return size
+}
+
 func decodePrefix(src []byte) (int, int) {
 	prefix, sn := binary.Uvarint(src)
 	if sn <= 0 {
