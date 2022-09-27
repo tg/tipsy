@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/golang/snappy"
-	"github.com/spaolacci/murmur3"
 	"github.com/tg/hyperloglog"
+	"github.com/twmb/murmur3"
 )
 
 type fixedHash32 uint32
